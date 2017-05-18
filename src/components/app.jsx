@@ -1,5 +1,5 @@
 import React from 'react';
-import { helpers } from '../services/index.js';
+import { helpers, viewport } from '../services/index.js';
 
 class App extends React.Component {
   constructor(props) {
@@ -9,7 +9,7 @@ class App extends React.Component {
       projects: [],
       cells: [],
     };
-    this.projects = null;
+    this.dataTable = null;
     // Bleh, should add stage-2 to lexically scope methods at some point
     this.handleLogin = this.handleLogin.bind(this); 
     this.handleLogout = this.handleLogout.bind(this);
@@ -45,7 +45,13 @@ class App extends React.Component {
   handleProjectSelection(e) {
     // Note: seems kludgy, probably a better way
     const project = this.state.projects.filter(project => project.name === e.target.value)[0];
-    helpers.getUser().getDataTable(project.id).listCells().then(data => {
+    if (!project) { 
+      this.dataTable = null;
+      this.setState({ cells: [] });
+      return;
+    }
+    this.dataTable = helpers.getUser().getDataTable(project.id);
+    this.dataTable.listCells().then(data => {
       const cells = data.entities;
       this.setState({ cells });
     }); 
@@ -53,9 +59,9 @@ class App extends React.Component {
 
   handleCellSelection(e) {
     const cell = this.state.cells.filter(cell => cell.label === e.target.value)[0];
-    console.log(cell);
-    // more stuff here
-
+    if (!cell || !this.dataTable) return;
+    this.dataTable.getCell(cell.id).fetch()
+      .then(data => viewport.render(data) );
   }
 
   render() {
@@ -69,12 +75,16 @@ class App extends React.Component {
           projects={projects} 
           select={this.handleProjectSelection} 
         />
-        <Viewport 
-          user={this.state.user}
-          cells={cells}
-          select={this.handleCellSelection}
-        />
-        { this.state.isLoggedIn ? 'LOGGED IN' : 'LOGGED OUT' }
+        { this.state.isLoggedIn ? 
+            <Viewport 
+              user={this.state.user}
+              cells={cells}
+              select={this.handleCellSelection}
+            /> :
+            <div id='splash'>
+              Please Log in!
+            </div>
+        }
       </div>
     );
   }
@@ -119,7 +129,7 @@ const NavBar = (props) => {
     <div id='header'>
       <div id='title'>
         <h1>FLUX</h1>
-        <h2>Seed Project</h2>
+        <h2>Exercise Project</h2>
       </div>
       <div id='actions'>
         {props.isLoggedIn ? <ProjectSelector projects={props.projects} select={props.select} /> : null}
@@ -129,7 +139,8 @@ const NavBar = (props) => {
   )
 };
 
-import { viewport } from '../services/index.js';
+// import { viewport } from '../services/index.js';
+import box from '../fixtures/box';
 
 class Viewport extends React.Component {
   constructor(props) {
@@ -138,6 +149,9 @@ class Viewport extends React.Component {
   }
   componentDidMount() {
     this.viewport = viewport.create('#view');
+    this.viewport.setGeometryEntity(box);
+    console.log('!!!',this.viewport._renderer);
+    console.log(this.viewport.homeCamera());
   }
   render() {
     return (
