@@ -10,9 +10,12 @@ const config = {
     loaders: [
       {
         test: /\.jsx?$/,
-        loader: 'babel-loader'
+        loader: 'babel-loader',
       }
     ]
+  },
+  resolve: {
+    extensions: ['.js','.jsx']
   }
 };
 

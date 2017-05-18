@@ -1,5 +1,7 @@
 import React from 'react';
-import { helpers, viewport } from '../services/index.js';
+import { helpers, viewport } from '../services';
+import NavBar from './NavBar';
+import Viewport from './Viewport';
 
 class App extends React.Component {
   constructor(props) {
@@ -8,6 +10,7 @@ class App extends React.Component {
       isLoggedIn: false,
       projects: [],
       cells: [],
+      cellDetails: [],
     };
     this.dataTable = null;
     // Bleh, should add stage-2 to lexically scope methods at some point
@@ -53,7 +56,7 @@ class App extends React.Component {
     this.dataTable = helpers.getUser().getDataTable(project.id);
     this.dataTable.listCells().then(data => {
       const cells = data.entities;
-      this.setState({ cells });
+      this.setState({ cells: cells });
     }); 
   }
 
@@ -61,7 +64,10 @@ class App extends React.Component {
     const cell = this.state.cells.filter(cell => cell.label === e.target.value)[0];
     if (!cell || !this.dataTable) return;
     this.dataTable.getCell(cell.id).fetch()
-      .then(data => viewport.render(data) );
+      .then(data => {
+        this.setState({ cellDetails: data.value });
+        viewport.render(data) 
+      });
   }
 
   render() {
@@ -87,89 +93,6 @@ class App extends React.Component {
         }
       </div>
     );
-  }
-}
-
-const LoginLogoutButton = (props) => {
-  return (
-    <div id='logout' onClick={props.toggle}>
-      {props.isLoggedIn ? 'Logout' : 'Login' }
-    </div>
-  )
-}
-
-const ProjectSelector = (props) => {
-  return (
-    <div className='select'>
-      <select className='project' onChange={props.select}>
-        <option>Please select a project</option>
-        {props.projects.map(project => 
-          <option key={project.id}>{project.name}</option>
-        )}
-      </select>
-    </div>
-  );
-}
-
-const CellSelector = (props) => {
-  return (
-    <div className='select' onChange={props.select}>
-      <select className='cell'>
-        <option>Please select a cell</option>
-        {props.cells.map(cell =>
-          <option key={cell.id}>{cell.label}</option>
-        )}
-      </select>
-    </div>
-  );
-};
-
-const NavBar = (props) => {
-  return (
-    <div id='header'>
-      <div id='title'>
-        <h1>FLUX</h1>
-        <h2>Exercise Project</h2>
-      </div>
-      <div id='actions'>
-        {props.isLoggedIn ? <ProjectSelector projects={props.projects} select={props.select} /> : null}
-        <LoginLogoutButton isLoggedIn={props.isLoggedIn} toggle={props.toggle} />
-      </div>
-    </div>
-  )
-};
-
-// import { viewport } from '../services/index.js';
-import box from '../fixtures/box';
-
-class Viewport extends React.Component {
-  constructor(props) {
-    super(props);
-    this.viewport = null;
-  }
-  componentDidMount() {
-    this.viewport = viewport.create('#view');
-    this.viewport.setGeometryEntity(box);
-    console.log('!!!',this.viewport._renderer);
-    console.log(this.viewport.homeCamera());
-  }
-  render() {
-    return (
-      <div id='content'>
-        <div className='column'>
-          <div id='output'>
-            <div className='label'>From Flux</div>
-            <div id='geometry'>
-              <div id='view'></div>
-            </div>
-            <div id='display'>
-              <div className='content'></div>
-            </div>
-            <CellSelector cells={this.props.cells} select={this.props.select}/>
-          </div>
-        </div>
-      </div>
-    )
   }
 }
 

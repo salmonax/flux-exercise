@@ -12,8 +12,6 @@ export const sdk = new FluxSdk(config.flux_client_id, {
 });
 export const helpers = new FluxHelpers(sdk);
 
-
-
 var _viewport;
 export const viewport = {
   create: (selector) => { 
@@ -29,18 +27,37 @@ export const viewport = {
       } else {
         return item;
       }
-    }
+    };
     if (!_viewport) return;
     if (!data) {
       console.log('Warning: Ignoring empty data for now');
     }
     else if (Array.isArray(data.value)) {
-      let geometry = flatten(data.value).map(transformGeo);
-      _viewport.setGeometryEntity(geometry);
+      let flat = flatten(data.value);
+      let output = [];
+      flat.forEach(item => {
+        if (item.primitive === 'revitElement') {
+          let meshId = item.instanceParameters.UniqueId;
+          let meshItem = item.geometryParameters.geometry;
+          meshItem.id = meshId;
+          meshItem.attributes = item.instanceParameters;
+          let instanceItem = {
+            primitive: "layer",
+            id: item.fluxId,
+            entity: meshId,
+            attributes: item.instanceParameters,
+          };
+          output.push(meshItem);
+          output.push(instanceItem);
+        } else if (FluxViewport.isKnownGeom(item)) {
+          output.push(item);
+        }
+      });
+      _viewport.setGeometryJson(JSON.stringify(output)).then(results => console.log('!!',results));
     }
     //check to see if the data is a known type of geometry
     else if (FluxViewport.isKnownGeom(data.value)) {
-      _viewport.setGeometryEntity(transformGeo(data.value))
+      _viewport.setGeometryEntity(data.value)
     } else {
       console.log=('Warning: Ignoring non-geometric data for now');
     }
