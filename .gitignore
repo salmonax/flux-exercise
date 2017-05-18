@@ -1,3 +1,5 @@
+services/config.js
+dist/bundle.js
 # Logs
 logs
 *.log
